@@ -1,173 +1,362 @@
 import 'package:flutter/material.dart';
-import 'package:sensors_plus/sensors_plus.dart';
-import 'dart:math';
+import 'package:go_router/go_router.dart';
+import 'pages_lista/carrinho_page_mercado.dart';
 
-void main() {
-  runApp(const MyApp());
+// ─── MODELO DO PRODUTO ────────────────────────────────────────────────────
+class Frutinha {
+  final int id;
+  final String nome;
+  final String emoji;
+  final double preco;
+  final String categoria;
+
+  const Frutinha({
+    required this.id,
+    required this.nome,
+    required this.emoji,
+    required this.preco,
+    required this.categoria,
+  });
+}
+// Aqui a gente vai definir a classe que vai moldar as frutas no código, eu apelidei ela de frutinhas
+// ela vai pega o id, nome, o emoji é só para mostrar a fruta e categoria que vai permitir a separação das frutas
+//também tem o preço
+
+// ─── CATÁLOGO ─────────────────────────────────────────────────────────────
+const List<Frutinha> produtos = [
+  Frutinha(
+    id: 1,
+    nome: 'laranja',
+    emoji: '🍊',
+    preco: 5.00,
+    categoria: 'Cítricos',
+  ),
+  Frutinha(
+    id: 2,
+    nome: 'kiwi',
+    emoji: '🥝',
+    preco: 8.00,
+    categoria: 'Cítricos',
+  ),
+  Frutinha(
+    id: 3,
+    nome: 'maçã',
+    emoji: '🍎',
+    preco: 10.00,
+    categoria: 'Clássicos',
+  ),
+  Frutinha(
+    id: 4,
+    nome: 'banana',
+    emoji: '🍌',
+    preco: 7.00,
+    categoria: 'Clássicos',
+  ),
+  Frutinha(
+    id: 5,
+    nome: 'melancia',
+    emoji: '🍉',
+    preco: 30.00,
+    categoria: 'Doces',
+  ),
+  Frutinha(
+    id: 6,
+    nome: 'uva',
+    emoji: '🍇',
+    preco: 20.00,
+    categoria: 'Doces',
+  ),
+];
+//aqui eu comecei definir quais frutas iriam aparecer no catalogo
+//de acordo com o que eu tinha definido na classe das frutinhas
+
+// ─── parte do carrinho ─────────────────────────────────────────────────────────────
+class ItemCarrinho {
+  final Frutinha produto;
+  int quantidade;
+  ItemCarrinho(this.produto, this.quantidade);
+}
+//declarou a classe do itemCarrinho que vai ser o item a ir ao carrinho
+//determinou o produto e a quantidade
+
+class CarrinhoController extends ChangeNotifier {
+  List<ItemCarrinho> itens = [];
+
+  void adicionar(Frutinha produto) {
+    for (var item in itens) {
+      if (item.produto.id == produto.id) {
+        item.quantidade++;
+        notifyListeners();
+        return;
+      }
+    }
+    itens.add(ItemCarrinho(produto, 1));
+    notifyListeners();
+  }
+
+  void remover(Frutinha produto) {
+    for (int i = 0; i < itens.length; i++) {
+      if (itens[i].produto.id == produto.id) {
+        if (itens[i].quantidade > 1) {
+          itens[i].quantidade--;
+        } else {
+          itens.removeAt(i);
+        }
+        notifyListeners();
+        return;
+      }
+    }
+  }
+  //esse controlador guarda os produtos do carrinho, aumenta 
+  //ou diminui suas quantidades e avisa a interface para se atualizar sempre que algo mudar
+  // --------------------------------------------------
+
+  void removerItemCompleto(Frutinha produto) {
+    itens.removeWhere((item) => item.produto.id == produto.id);
+    notifyListeners();
+  }
+
+  double get total {
+    double soma = 0;
+    for (var item in itens) soma += item.produto.preco * item.quantidade;
+    return soma;
+  }
+
+  int get totalItens {
+    int soma = 0;
+    for (var item in itens) soma += item.quantidade;
+    return soma;
+  }
+
+  void limpar() {
+    itens.clear();
+    notifyListeners();
+  }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+final carrinho = CarrinhoController();
+
+// removerItemCompleto → remove um produto do carrinho.
+// total → calcula o preço total.
+// totalItens → conta quantos itens existem.
+// limpar → esvazia o carrinho.
+// carrinho → é o objeto que controla tudo isso.
+
+// ─── ROTAS ────────────────────────────────────────────────────────────────
+final GoRouter router = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(path: '/', builder: (context, state) => const HomePage()),
+    GoRoute(path: '/carrinho', builder: (context, state) => const CarrinhoPage()),
+  ],
+);
+
+void main() => runApp(const MeuApp());
+
+class MeuApp extends StatelessWidget {
+  const MeuApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
+      title: 'Feira de Frutas',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 130, 255, 168)),
         useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
-        scaffoldBackgroundColor: const Color(0xFFEAF3FB),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1565C0),
-          foregroundColor: Colors.white,
-          elevation: 0,
-        ),
       ),
-      home: const SensorPage(),
+      routerConfig: router,
     );
   }
 }
+// aqui nessa parte ele vai trabalhar com a parte de rotas, que 
+// também fala sobre o GoRouter, que é um tipo de navegação, inclusive é 
+// por isso que tem uma pasta que vai trabalhar com os dados levados pro carrinho
+// essa parte é o papel do goRouter
 
-class SensorPage extends StatefulWidget {
-  const SensorPage({super.key});
+// ─── pag principal ────────────────────────────────────────────────────────────
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<SensorPage> createState() => _SensorPageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _SensorPageState extends State<SensorPage> {
-  double x = 0;
-  double y = 0;
-  double z = 0;
+class _HomePageState extends State<HomePage> {
+  String _categoriaSelecionada = 'Todos';
 
-  bool isMoving = false;
+  static const List<String> _categorias = [
+    'Todos',
+    'Cítricos',
+    'Doces',
+    'Clássicos',
+    'Outros',
+  ];
 
-  // Aceleração da gravidade aproximada (m/s²)
-  static const double _gravity = 9.8;
-  // Sensibilidade: quanto menor, mais fácil detectar movimento
-  static const double _threshold = 1.2;
-
-  @override
-  void initState() {
-    super.initState();
-
-    accelerometerEventStream().listen((event) {
-      setState(() {
-        x = event.x;
-        y = event.y;
-        z = event.z;
-
-        // Magnitude do vetor de aceleração
-        final double magnitude = sqrt(x * x + y * y + z * z);
-
-        // Diferença em relação à gravidade parada (1g)
-        final double delta = (magnitude - _gravity).abs();
-
-        isMoving = delta > _threshold;
-      });
-    });
+  List<Frutinha> get _produtosFiltrados {
+    if (_categoriaSelecionada == 'Todos') return produtos;
+    return produtos.where((p) => p.categoria == _categoriaSelecionada).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final Color statusColor = isMoving
-        ? const Color(0xFF1976D2) // azul mais forte para "em movimento"
-        : const Color(0xFF64B5F6); // azul mais claro para "parado"
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sensor do celular'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Acelerômetro',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0D47A1),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Aviso de status (movimento / parado)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 14,
-              ),
-              decoration: BoxDecoration(
-                color: statusColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: statusColor.withOpacity(0.4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+        title: const Text('Feira de Frutas'),
+        backgroundColor: const Color(0xFF4A7C59),
+        foregroundColor: Colors.white,
+        actions: [
+          ListenableBuilder(
+            listenable: carrinho,
+            builder: (context, _) {
+              return Stack(
                 children: [
-                  Icon(
-                    isMoving ? Icons.directions_run : Icons.stop_circle,
-                    color: Colors.white,
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    onPressed: () => context.push('/carrinho'),
                   ),
-                  const SizedBox(width: 10),
-                  Text(
-                    isMoving ? 'Dispositivo em movimento' : 'Dispositivo parado',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                  if (carrinho.totalItens > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${carrinho.totalItens}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
                 ],
-              ),
-            ),
+              );
+            },
+          ),
+        ],
+// essa parte aqui é mais estilização mesmo da página principal
+// ------------------------------------------------------------------------------------------------------------------------------
 
-            const SizedBox(height: 40),
-
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF90CAF9), width: 1.5),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'X: ${x.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      color: Color(0xFF1565C0),
+        // ─── parte das categorias ───────────────────
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: SizedBox(
+            height: 48,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              itemCount: _categorias.length,
+              itemBuilder: (context, index) {
+                final cat = _categorias[index];
+                final selecionada = cat == _categoriaSelecionada;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(cat),
+                    selected: selecionada,
+                    onSelected: (_) => setState(() => _categoriaSelecionada = cat),
+                    selectedColor: Colors.white,
+                    backgroundColor: const Color(0xFF3A6B4A),
+                    labelStyle: TextStyle(
+                      color: selecionada ? const Color(0xFF4A7C59) : Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
                     ),
+                    side: BorderSide.none,
                   ),
-                  Text(
-                    'Y: ${y.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      color: Color(0xFF1565C0),
-                    ),
-                  ),
-                  Text(
-                    'Z: ${z.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      color: Color(0xFF1565C0),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
-          ],
+          ),
         ),
+      ),
+
+      // essa parte ela vai mexer com a parte das categorias
+      // porque cada produto tem sua própria caracteristica, ent tem uma categoria só para o tipo dele
+      // no caso seria semelhante a uma sessão no html
+
+      // ----------------------------------------------------------------------------------------------------------------
+
+      // ─── lista dos produtos ────────────────────────────────────────────
+      body: _produtosFiltrados.isEmpty
+          ? const Center(
+              child: Text(
+                'Nenhum produto nesta categoria.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _produtosFiltrados.length,
+              itemBuilder: (context, index) {
+                final produto = _produtosFiltrados[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: Text(produto.emoji, style: const TextStyle(fontSize: 36)),
+                    title: Text(produto.nome),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          produto.nome,
+                          style: const TextStyle(
+                            fontStyle: FontStyle.italic,
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Text('R\$ ${produto.preco.toStringAsFixed(2)}'),
+                      ],
+                    ),
+                    isThreeLine: true,
+                    trailing: IconButton(
+                      icon: const Icon(Icons.add,
+                          color: Color(0xFF4A7C59)),
+                      onPressed: () {
+                        carrinho.adicionar(produto);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${produto.nome} adicionado!'),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            // Se houver produtos, eles são exibidos em uma lista com
+            // um botão para adicioná-los ao carrinho, se não, é mostrada uma mensagem
+            // dizendo que não há produtos nessa categoria
+    //  -------------------------------------------------------------------------------------------------------------------------
+      // ─── parte do menu inferior ──────────────────────────
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        onTap: (_) {}, // sem funcionalidade
+        selectedItemColor: const Color(0xFF4A7C59),
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            label: 'Início',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category_outlined),
+            label: 'Categorias',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Perfil',
+          ),
+        ],
       ),
     );
   }
