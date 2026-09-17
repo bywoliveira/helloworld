@@ -2,82 +2,88 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'pages_lista/carrinho_page_mercado.dart';
 
-// ─── MODELO DO PRODUTO ────────────────────────────────────────────────────
 class Frutinha {
   final int id;
   final String nome;
+  final String nomeCientifico;
   final String emoji;
   final double preco;
   final String categoria;
+  final String descricao;
 
   const Frutinha({
     required this.id,
     required this.nome,
+    required this.nomeCientifico,
     required this.emoji,
     required this.preco,
     required this.categoria,
+    required this.descricao,
   });
 }
-// Aqui a gente vai definir a classe que vai moldar as frutas no código, eu apelidei ela de frutinhas
-// ela vai pega o id, nome, o emoji é só para mostrar a fruta e categoria que vai permitir a separação das frutas
-//também tem o preço
 
-// ─── CATÁLOGO ─────────────────────────────────────────────────────────────
 const List<Frutinha> produtos = [
   Frutinha(
     id: 1,
-    nome: 'laranja',
+    nome: 'Laranja',
+    nomeCientifico: 'Citrus sinensis',
     emoji: '🍊',
     preco: 5.00,
     categoria: 'Cítricos',
+    descricao: 'Fruta cítrica rica em vitamina C e bastante utilizada em sucos e sobremesas.',
   ),
   Frutinha(
     id: 2,
-    nome: 'kiwi',
+    nome: 'Kiwi',
+    nomeCientifico: 'Actinidia deliciosa',
     emoji: '🥝',
     preco: 8.00,
     categoria: 'Cítricos',
+    descricao: 'Fruta de sabor levemente ácido, com polpa verde e pequenas sementes.',
   ),
   Frutinha(
     id: 3,
-    nome: 'maçã',
+    nome: 'Maçã',
+    nomeCientifico: 'Malus domestica',
     emoji: '🍎',
     preco: 10.00,
     categoria: 'Clássicos',
+    descricao: 'Fruta crocante e de sabor adocicado, muito consumida in natura.',
   ),
   Frutinha(
     id: 4,
-    nome: 'banana',
+    nome: 'Banana',
+    nomeCientifico: 'Musa spp.',
     emoji: '🍌',
     preco: 7.00,
     categoria: 'Clássicos',
+    descricao: 'Fruta macia e naturalmente doce, muito utilizada em lanches e sobremesas.',
   ),
   Frutinha(
     id: 5,
-    nome: 'melancia',
+    nome: 'Melancia',
+    nomeCientifico: 'Citrullus lanatus',
     emoji: '🍉',
     preco: 30.00,
     categoria: 'Doces',
+    descricao: 'Fruta grande e bastante hidratante, com polpa geralmente vermelha e sabor adocicado.',
   ),
   Frutinha(
     id: 6,
-    nome: 'uva',
+    nome: 'Uva',
+    nomeCientifico: 'Vitis vinifera',
     emoji: '🍇',
     preco: 20.00,
     categoria: 'Doces',
+    descricao: 'Fruta pequena e suculenta, encontrada em diferentes variedades e cores.',
   ),
 ];
-//aqui eu comecei definir quais frutas iriam aparecer no catalogo
-//de acordo com o que eu tinha definido na classe das frutinhas
 
-// ─── parte do carrinho ─────────────────────────────────────────────────────────────
 class ItemCarrinho {
   final Frutinha produto;
   int quantidade;
   ItemCarrinho(this.produto, this.quantidade);
 }
-//declarou a classe do itemCarrinho que vai ser o item a ir ao carrinho
-//determinou o produto e a quantidade
 
 class CarrinhoController extends ChangeNotifier {
   List<ItemCarrinho> itens = [];
@@ -107,9 +113,6 @@ class CarrinhoController extends ChangeNotifier {
       }
     }
   }
-  //esse controlador guarda os produtos do carrinho, aumenta 
-  //ou diminui suas quantidades e avisa a interface para se atualizar sempre que algo mudar
-  // --------------------------------------------------
 
   void removerItemCompleto(Frutinha produto) {
     itens.removeWhere((item) => item.produto.id == produto.id);
@@ -136,18 +139,14 @@ class CarrinhoController extends ChangeNotifier {
 
 final carrinho = CarrinhoController();
 
-// removerItemCompleto → remove um produto do carrinho.
-// total → calcula o preço total.
-// totalItens → conta quantos itens existem.
-// limpar → esvazia o carrinho.
-// carrinho → é o objeto que controla tudo isso.
-
-// ─── ROTAS ────────────────────────────────────────────────────────────────
 final GoRouter router = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(path: '/', builder: (context, state) => const HomePage()),
-    GoRoute(path: '/carrinho', builder: (context, state) => const CarrinhoPage()),
+    GoRoute(
+      path: '/carrinho',
+      builder: (context, state) => const CarrinhoPage(),
+    ),
   ],
 );
 
@@ -162,19 +161,16 @@ class MeuApp extends StatelessWidget {
       title: 'Feira de Frutas',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 130, 255, 168)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color.fromARGB(255, 130, 255, 168),
+        ),
         useMaterial3: true,
       ),
       routerConfig: router,
     );
   }
 }
-// aqui nessa parte ele vai trabalhar com a parte de rotas, que 
-// também fala sobre o GoRouter, que é um tipo de navegação, inclusive é 
-// por isso que tem uma pasta que vai trabalhar com os dados levados pro carrinho
-// essa parte é o papel do goRouter
 
-// ─── pag principal ────────────────────────────────────────────────────────────
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -240,10 +236,7 @@ class _HomePageState extends State<HomePage> {
             },
           ),
         ],
-// essa parte aqui é mais estilização mesmo da página principal
-// ------------------------------------------------------------------------------------------------------------------------------
 
-        // ─── parte das categorias ───────────────────
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: SizedBox(
@@ -260,11 +253,14 @@ class _HomePageState extends State<HomePage> {
                   child: ChoiceChip(
                     label: Text(cat),
                     selected: selecionada,
-                    onSelected: (_) => setState(() => _categoriaSelecionada = cat),
+                    onSelected: (_) =>
+                        setState(() => _categoriaSelecionada = cat),
                     selectedColor: Colors.white,
                     backgroundColor: const Color(0xFF3A6B4A),
                     labelStyle: TextStyle(
-                      color: selecionada ? const Color(0xFF4A7C59) : Colors.white,
+                      color: selecionada
+                          ? const Color(0xFF4A7C59)
+                          : Colors.white,
                       fontWeight: FontWeight.w500,
                       fontSize: 13,
                     ),
@@ -277,13 +273,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
 
-      // essa parte ela vai mexer com a parte das categorias
-      // porque cada produto tem sua própria caracteristica, ent tem uma categoria só para o tipo dele
-      // no caso seria semelhante a uma sessão no html
-
-      // ----------------------------------------------------------------------------------------------------------------
-
-      // ─── lista dos produtos ────────────────────────────────────────────
       body: _produtosFiltrados.isEmpty
           ? const Center(
               child: Text(
@@ -299,7 +288,10 @@ class _HomePageState extends State<HomePage> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
-                    leading: Text(produto.emoji, style: const TextStyle(fontSize: 36)),
+                    leading: Text(
+                      produto.emoji,
+                      style: const TextStyle(fontSize: 36),
+                    ),
                     title: Text(produto.nome),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,8 +309,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     isThreeLine: true,
                     trailing: IconButton(
-                      icon: const Icon(Icons.add,
-                          color: Color(0xFF4A7C59)),
+                      icon: const Icon(Icons.add, color: Color(0xFF4A7C59)),
                       onPressed: () {
                         carrinho.adicionar(produto);
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -333,11 +324,7 @@ class _HomePageState extends State<HomePage> {
                 );
               },
             ),
-            // Se houver produtos, eles são exibidos em uma lista com
-            // um botão para adicioná-los ao carrinho, se não, é mostrada uma mensagem
-            // dizendo que não há produtos nessa categoria
-    //  -------------------------------------------------------------------------------------------------------------------------
-      // ─── parte do menu inferior ──────────────────────────
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
         onTap: (_) {}, // sem funcionalidade
