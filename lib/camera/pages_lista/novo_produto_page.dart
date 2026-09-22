@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../main_camera.dart';
+//se por acaso for testar no main.dart, tem q subir o nível
 
 class NovoProdutoPage extends StatefulWidget {
   const NovoProdutoPage({super.key});
