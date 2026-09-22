@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'camera/pages_lista/carrinho_page_mercado.dart';
-import 'camera/pages_lista/novo_produto_page.dart';
+import 'pages_lista/carrinho_page_mercado.dart';
+import 'pages_lista/novo_produto_page.dart';
 
 class Frutinha {
   final int id;
