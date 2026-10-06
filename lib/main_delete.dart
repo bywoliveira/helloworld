@@ -1,34 +1,20 @@
-// o que esse código realiza:
-//   - GET    -> lista os produtos cadastrados no banco
-//   - DELETE -> exclui um produto pelo id
-
-// Bibliotecas 
 import 'dart:convert';
-import 'package:flutter/material.dart';
 
-// Pacote "http": permite fazer requisições GET, POST, DELETE etc.
-//mostrar o xml
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-// Endereço base da API. É o IP do computador onde roda o Apache + MySQL.
-//nesse caso, ip da fluxe para ter acesso a API e ao banco de dados
+// IP do PC que está rodando o Apache + MySQL (o servidor da API)
 const String baseUrl = 'http://10.140.170.47/pdm_api';
-
 
 void main() => runApp(const MyApp());
 
-
-// Classe que representa UM produto do banco de dados.
-
+// ------------------------------- MODELO ------------------------------------
 class Produto {
-  // "final" = o valor é definido uma vez e não muda (objeto imutável).
   final int id;
   final String nome;
   final double preco;
   final int estoque;
 
-  // Construtor com parâmetros nomeados e obrigatórios (required).
-  // "this.id" já atribui o argumento direto ao campo da classe.
   Produto({
     required this.id,
     required this.nome,
@@ -36,8 +22,6 @@ class Produto {
     required this.estoque,
   });
 
-  // "factory constructor": constrói um Produto a partir de um Map (JSON já decodificado).
-  
   factory Produto.fromJson(Map<String, dynamic> j) => Produto(
         id: int.parse(j['id'].toString()),
         nome: j['nome'].toString(),
@@ -46,74 +30,48 @@ class Produto {
       );
 }
 
-//  API 
-
-// Classe que concentra toda a comunicação com o servidor.
-// Todos os membros são "static": não precisa criar objeto, basta chamar Api.listar().
+// ------------------------------- API ---------------------------------------
 class Api {
-  // ValueNotifier é um objeto "observável": quando o .value muda,
-  
   static final ValueNotifier<String> log =
       ValueNotifier<String>('Nenhuma requisição ainda');
 
-  // Tempo máximo de espera por resposta. Passou de 10s, lança TimeoutException.
   static const _timeout = Duration(seconds: 10);
 
-  // GET /produtos -> devolve a lista de produtos.
-  // "Future<List<Produto>>" = promessa de uma lista que chegará no futuro (assíncrono).
+  // GET /produtos
   static Future<List<Produto>> listar() async {
-    // Monta a URL, dispara o GET e espera ("await") a resposta.
-    // .timeout() aplica o limite de 10 segundos definido acima.
     final r = await http
         .get(Uri.parse('$baseUrl/produtos.php'))
         .timeout(_timeout);
-
-    // Atualiza o log: isso faz o painel preto no topo da tela mudar de texto.
     log.value = 'GET /produtos  →  ${r.statusCode}';
-
-    // 200 = OK. Qualquer outro código vira exceção, tratada por quem chamou.
     if (r.statusCode != 200) throw Exception('Erro ${r.statusCode}');
-
-    // r.body é uma String JSON. jsonDecode a transforma em estrutura Dart;
-    // "as List" garante que esperamos um array JSON ([...]).
     final lista = jsonDecode(r.body) as List;
-
-    // Para cada item (Map) cria um Produto com fromJson e junta tudo numa List<Produto>.
     return lista.map((e) => Produto.fromJson(e)).toList();
   }
 
-  // DELETE /produtos/{id} -> remove um produto.
-  // Future<void> = operação assíncrona que não devolve valor.
+  // DELETE /produtos/{id}
   static Future<void> excluir(int id) async {
-    // Aqui o id vai na query string (?id=5), pois a API é um PHP simples.
     final r = await http
         .delete(Uri.parse('$baseUrl/produtos.php?id=$id'))
         .timeout(_timeout);
-
-    // O log mostra o estilo REST "/produtos/5", mesmo que a URL real use ?id=5.
     log.value = 'DELETE /produtos/$id  →  ${r.statusCode}';
-
     if (r.statusCode != 200) throw Exception('Erro ${r.statusCode}');
   }
 }
 
 // ------------------------------- APP ---------------------------------------
-// Widget raiz do aplicativo. É StatelessWidget porque não tem estado que mude.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    
     return MaterialApp(
       title: 'Cliente REST',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
-      home: const ProdutosPage(), // primeira tela exibida
+      home: const ProdutosPage(),
     );
   }
 }
-
-// Tela de produtos. É StatefulWidget porque o que aparece muda com o tempo
 
 class ProdutosPage extends StatefulWidget {
   const ProdutosPage({super.key});
@@ -122,61 +80,42 @@ class ProdutosPage extends StatefulWidget {
   State<ProdutosPage> createState() => _ProdutosPageState();
 }
 
-
 class _ProdutosPageState extends State<ProdutosPage> {
-  // --- Variáveis de estado ---
-  List<Produto> _produtos = []; // produtos vindos da API
-  bool _carregando = true;      // true enquanto espera a resposta
-  String? _erro;                // mensagem de erro (null = sem erro; "?" permite null)
+  List<Produto> _produtos = [];
+  bool _carregando = true;
+  String? _erro;
 
-  // initState roda UMA vez, quando a tela é criada.
-  
   @override
   void initState() {
     super.initState();
     _carregar();
   }
 
-  // Busca os produtos na API e atualiza a tela conforme o resultado.
   Future<void> _carregar() async {
-    // setState avisa o Flutter: "o estado mudou, redesenhe a tela".
-    // Aqui entra no modo "carregando" e limpa erro anterior.
     setState(() {
       _carregando = true;
       _erro = null;
     });
     try {
       final lista = await Api.listar();
-
-      // "mounted" indica se a tela ainda existe. Se o usuário saiu dela enquanto
-      // a requisição rodava, chamar setState causaria erro. Por isso a checagem.
       if (!mounted) return;
       setState(() => _produtos = lista);
     } catch (e) {
-      // Qualquer falha (sem rede, timeout, status != 200, JSON inválido) cai aqui.
       if (!mounted) return;
       setState(() => _erro = 'Não foi possível conectar à API.\n\n$e');
     } finally {
-      // "finally" executa sempre, dando certo ou errado:
-      // garante que o indicador de carregamento seja desligado.
       if (mounted) setState(() => _carregando = false);
     }
   }
 
-  // Atalho para exibir uma mensagem rápida (SnackBar) na parte de baixo da tela.
   void _mensagem(String texto) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(texto)));
   }
 
-  // Formata um número como moeda brasileira: 49.9 -> "R$ 49,90".
-  
   String _moeda(double v) => 'R\$ ${v.toStringAsFixed(2).replaceAll('.', ',')}';
 
-  // Fluxo de exclusão: pergunta ao usuário, depois chama a API (DELETE).
   Future<void> _excluir(Produto p) async {
-    // showDialog abre um pop-up e devolve (bool?) o valor passado em Navigator.pop.
-    // true = confirmou, false = cancelou, null = tocou fora do diálogo.
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -192,29 +131,23 @@ class _ProdutosPageState extends State<ProdutosPage> {
         ],
       ),
     );
-
-    // Só segue se for exatamente true (cobre cancelar e fechar tocando fora).
     if (ok != true) return;
 
     try {
-      await Api.excluir(p.id);   // envia o DELETE ao servidor
+      await Api.excluir(p.id);
       _mensagem('Produto removido');
-      await _carregar();         // recarrega a lista para refletir a remoção
+      await _carregar();
     } catch (e) {
-      // Remove o prefixo "Exception: " para a mensagem ficar mais limpa.
       _mensagem(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
- 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Produtos (cliente)'),
         actions: [
-          // Botão de recarregar na barra superior: refaz o GET.
           IconButton(
             tooltip: 'Recarregar (GET)',
             icon: const Icon(Icons.refresh),
@@ -222,53 +155,43 @@ class _ProdutosPageState extends State<ProdutosPage> {
           ),
         ],
       ),
-    
       body: Column(
         children: [
-          // ValueListenableBuilder "escuta" o Api.log e reconstrói SÓ este trecho
-          // sempre que o texto mudar, sem precisar de setState.
           ValueListenableBuilder<String>(
             valueListenable: Api.log,
             builder: (_, texto, __) => Container(
-              width: double.infinity, // ocupa toda a largura
-              color: Colors.black87,  // fundo estilo terminal
+              width: double.infinity,
+              color: Colors.black87,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Text(
                 texto,
                 style: const TextStyle(
-                  color: Colors.greenAccent, // texto verde estilo console
+                  color: Colors.greenAccent,
                   fontFamily: 'monospace',
                   fontSize: 13,
                 ),
               ),
             ),
           ),
-          
           Expanded(child: _corpo()),
         ],
       ),
     );
   }
 
-  
-  // A ordem dos "if" importa: carregando > erro > vazio > lista.
   Widget _corpo() {
-    // 1) Carregando: 
     if (_carregando) {
       return const Center(child: CircularProgressIndicator());
     }
-
-    // 2) Erro: mostra a mensagem e um botão para tentar de novo.
     if (_erro != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisSize: MainAxisSize.min, // coluna só do tamanho do conteúdo
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // "_erro!" garante ao Dart que aqui o valor não é null.
               Text(_erro!, textAlign: TextAlign.center),
-              const SizedBox(height: 16), // espaçamento vertical
+              const SizedBox(height: 16),
               FilledButton(
                   onPressed: _carregar, child: const Text('Tentar novamente')),
             ],
@@ -276,31 +199,20 @@ class _ProdutosPageState extends State<ProdutosPage> {
         ),
       );
     }
-
-    // 3) Sem erro, mas lista vazia.
     if (_produtos.isEmpty) {
       return const Center(child: Text('Nenhum produto cadastrado'));
     }
-
-    // 4) Caso normal: lista de produtos com "puxar para atualizar".
     return RefreshIndicator(
-      onRefresh: _carregar, // ao puxar a lista para baixo, refaz o GET
+      onRefresh: _carregar,
       child: ListView.builder(
-        // Garante que dá para puxar mesmo se a lista for curta
-        // (senão o RefreshIndicator não dispararia).
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: _produtos.length,
-        // itemBuilder cria cada linha sob demanda (eficiente para listas grandes).
-        // "i" é o índice do item atual.
         itemBuilder: (_, i) {
           final p = _produtos[i];
           return ListTile(
-            // Círculo à esquerda com o id do produto.
             leading: CircleAvatar(child: Text('${p.id}')),
             title: Text(p.nome),
-            // "•" é só um separador visual entre preço e estoque.
             subtitle: Text('${_moeda(p.preco)}  •  Estoque: ${p.estoque}'),
-            // Lixeira vermelha à direita: inicia o fluxo de exclusão.
             trailing: IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: () => _excluir(p),
